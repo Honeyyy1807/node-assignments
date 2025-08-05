@@ -1,19 +1,42 @@
-const { signup, login } = require('./auth');
+const express = require('express');
+const session = require('express-session');
+const passport = require('passport');
+const path = require('path');
+const authRoutes = require('./routes/authRoutes');
+const sequelize = require('./sequelize');
+require('dotenv').config();
+require('./auth/googleStrategy');
 
-const args = process.argv.slice(2);
-const [command, username, password] = args;
+const app = express();
 
-if (!username || !password) {
-  console.log('Usage: node index.js <signup|login> <username> <password>');
-  process.exit(1);
+app.use(express.urlencoded({ extended: true }));
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+
+app.use('/auth', authRoutes);
+
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'login.html'));
+});
+
+app.get('/dashboard', isLoggedIn, (req, res) => {
+  res.send(`<h1>Hello, ${req.user.username}</h1> <a href="/auth/logout">Logout</a>`);
+});
+
+function isLoggedIn(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  res.redirect('/');
 }
 
-(async () => {
-  if (command === 'signup') {
-    await signup(username, password);
-  } else if (command === 'login') {
-    await login(username, password);
-  } else {
-    console.log('Invalid command. Use "signup" or "login".');
-  }
-})();
+sequelize.sync({ alter: true }).then(() => {
+  app.listen(3000, () => {
+    console.log('Server started on http://localhost:3000');
+  });
+});
