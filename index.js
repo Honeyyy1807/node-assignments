@@ -1,5 +1,4 @@
 const { signup, login } = require('./auth');
-
 const args = process.argv.slice(2);
 const [command, username, password] = args;
 
@@ -17,3 +16,4 @@ if (!username || !password) {
     console.log('Invalid command. Use "signup" or "login".');
   }
 })();
+
